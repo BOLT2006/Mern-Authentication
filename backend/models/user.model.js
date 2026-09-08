@@ -3,25 +3,25 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     username: {
-      type: true,
+      type: String,
       required: true,
     },
     email: {
-      type: true,
+      type: String,
       required: true,
       unique: true,
     },
     password: {
-      type: true,
+      type: String,
       required: true,
     },
     isVerified: {
-      type: true,
+      type: Boolean,
       default: false,
     },
 
     isLoggedIn: {
-      type: true,
+      type: Boolean,
       default: false,
     },
     token: {
@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     otp: {
-      type: true,
+      type: String,
       default: null,
     },
     otpExpiry: {
