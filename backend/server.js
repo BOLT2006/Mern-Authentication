@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 /* middleware*/
 app.use(express.json())
-
+/* router*/
 app.use('/user', userRoute)
 
 // http://localhost:8000/user/register
