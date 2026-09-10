@@ -85,33 +85,90 @@ const verification = async (req, res) => {
         message: "Token verification failed",
       });
     }
-    const user  = await User.findById(decoded.id)
-    if(!user){
-        return res.status(404).json({
-            success : false,
-            message : "User not found"
-        })
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
     // if user exists
-    user.token = null
-    user.isVerified = true
+    user.token = null;
+    user.isVerified = true;
     // save the user
-    await user.save()
+    await user.save();
 
     return res.status(200).json({
-        success : true,
-        message : "Email verified Successfully"
-    })
+      success: true,
+      message: "Email verified Successfully",
+    });
   } catch (error) {
     return res.status(500).json({
-        success : false,
-        message : error.message
-    })
+      success: false,
+      message: error.message,
+    });
   }
 };
 
+/* Login Controller */
+const userLogin = async (req, res) => {
+  try {
+    // login data
+    const { email, password } = req.body;
 
-export { 
-    userRegister ,
-    verification
+    //Validate the input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Bad Request",
+      });
+    }
+
+    // find the  user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invaild email or password",
+      });
+    }
+
+    // check email verification
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email first",
+      });
+    }
+
+    // compare password
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+    // Generate JWT
+    const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "10m",
+    });
+
+    // save the token
+    user.token = token;
+    user.isLoggedIn = true;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token: token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
+
+export { userRegister, verification , userLogin };
