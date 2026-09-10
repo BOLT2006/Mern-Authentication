@@ -2,6 +2,7 @@ import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt, { decode } from "jsonwebtoken";
 import { verifyMail } from "../emailVerify/verifyMail.js";
+import { Session } from "../models/session.model.js";
 /* User Register */
 const userRegister = async (req, res) => {
   try {
@@ -116,7 +117,7 @@ const userLogin = async (req, res) => {
     // login data
     const { email, password } = req.body;
 
-    //Validate the input
+    // Validate the input
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -124,16 +125,17 @@ const userLogin = async (req, res) => {
       });
     }
 
-    // find the  user
+    // Find the user
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invaild email or password",
+        message: "Invalid email or password",
       });
     }
 
-    // check email verification
+    // Check email verification
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,
@@ -141,28 +143,63 @@ const userLogin = async (req, res) => {
       });
     }
 
-    // compare password
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    // Compare password
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user.password
+    );
+
     if (!isPasswordCorrect) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
     }
-    // Generate JWT
-    const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
-      expiresIn: "10m",
+
+    // Generate access token
+    const accessToken = jwt.sign(
+      { id: user._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "10m" }
+    );
+
+    // Generate refresh token
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "7d" }
+    );
+
+    // Check for existing session and delete it
+    const existingSession = await Session.findOne({
+      userId: user._id,
     });
 
-    // save the token
-    user.token = token;
+    if (existingSession) {
+      await Session.deleteOne({
+        userId: user._id,
+      });
+    }
+
+    // Create a new session
+    await Session.create({
+      userId: user._id,
+      accessToken,
+      refreshToken,
+    });
+
+    // Update login status
     user.isLoggedIn = true;
     await user.save();
+
     return res.status(200).json({
       success: true,
-      message: "Login successful",
-      token: token,
+      message: `Welcome back ${user.username}`,
+      accessToken,
+      refreshToken,
+      user,
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
