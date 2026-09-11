@@ -62,7 +62,7 @@ const verification = async (req, res) => {
     if (!authHeader || !authHeader.startsWith("Bearer")) {
       return res.status(401).json({
         success: false,
-        message: "Authorization is token is missing and invalid",
+        message: "Authorization  token is missing or invalid",
       });
     }
 
@@ -144,10 +144,7 @@ const userLogin = async (req, res) => {
     }
 
     // Compare password
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({
@@ -157,18 +154,14 @@ const userLogin = async (req, res) => {
     }
 
     // Generate access token
-    const accessToken = jwt.sign(
-      { id: user._id },
-      process.env.SECRET_KEY,
-      { expiresIn: "10m" }
-    );
+    const accessToken = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "10m",
+    });
 
     // Generate refresh token
-    const refreshToken = jwt.sign(
-      { id: user._id },
-      process.env.SECRET_KEY,
-      { expiresIn: "7d" }
-    );
+    const refreshToken = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "7d",
+    });
 
     // Check for existing session and delete it
     const existingSession = await Session.findOne({
@@ -199,7 +192,6 @@ const userLogin = async (req, res) => {
       refreshToken,
       user,
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -208,4 +200,27 @@ const userLogin = async (req, res) => {
   }
 };
 
-export { userRegister, verification , userLogin };
+/* Logout Controller */
+const userLogout = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // Delete the Session
+    await Session.deleteMany({ userId });
+
+    // Update the user
+    await User.findByIdAndUpdate(userId, { isLoggedIn: false });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export { userRegister, verification, userLogin, userLogout };
