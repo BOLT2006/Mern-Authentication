@@ -4,6 +4,7 @@ import jwt, { decode } from "jsonwebtoken";
 import { verifyMail } from "../emailVerify/verifyMail.js";
 import { Session } from "../models/session.model.js";
 import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
+import { use } from "react";
 /* User Register */
 const userRegister = async (req, res) => {
   try {
@@ -224,7 +225,7 @@ const userLogout = async (req, res) => {
   }
 };
 
-/* Forgot Password */
+/* Forgot Password and Send OTP*/
 const forgotPassword = async (req, res) => {
   try {
     //Get Email
@@ -274,4 +275,69 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-export { userRegister, verification, userLogin, userLogout, forgotPassword };
+/* Verify OTP */
+const verifyOTP = async (req, res) => {
+  // Get email and OTP
+  const { otp } = req.body;
+  const { email } = req.params.email;
+
+  // Validate email and OTP
+  if (!email || !otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and OTP are required",
+    });
+  }
+  // find user
+  try {
+    const user = await User.findOne({ email });
+
+    //check User
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    // check otp and otpExpiry
+    if (!user.otp || !user.otpExpiry) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP not generated or already verified",
+      });
+    }
+
+    // check otp expiry with current date
+    if (user.otpExpiry < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired . Please request a new one",
+      });
+    }
+
+    // compare the otp
+    if (otp !== user.otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // update the user
+    user.otp = null;
+    user.otpExpiry = null;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified Successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export { userRegister, verification, userLogin, userLogout, forgotPassword , verifyOTP };

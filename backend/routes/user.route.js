@@ -5,6 +5,7 @@ import {
   userLogout,
   userRegister,
   verification,
+  verifyOTP,
 } from "../controller/user.controller.js";
 import { isAuthenticated } from "../middleware/isAuthenticated.middleware.js";
 
@@ -15,6 +16,7 @@ router.post("/verify", verification);
 router.post("/login", userLogin);
 router.post("/logout", isAuthenticated ,userLogout);
 router.post("/forgot-password" , forgotPassword)
+router.post("/verify-otp/:email" , verifyOTP)
 
 
 export default router;
