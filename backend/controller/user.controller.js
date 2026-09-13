@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt, { decode } from "jsonwebtoken";
 import { verifyMail } from "../emailVerify/verifyMail.js";
 import { Session } from "../models/session.model.js";
+import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
 /* User Register */
 const userRegister = async (req, res) => {
   try {
@@ -223,4 +224,54 @@ const userLogout = async (req, res) => {
   }
 };
 
-export { userRegister, verification, userLogin, userLogout };
+/* Forgot Password */
+const forgotPassword = async (req, res) => {
+  try {
+    //Get Email
+    const { email } = req.body;
+
+    // Validate Email
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email",
+      });
+    }
+    // Find user
+    const user = await User.findOne({ email });
+
+    // check user
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not Found",
+      });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Generate OTP expiry
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save the OTP and expiry
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+
+    // Send OTP mail
+    await sendOtpMail(email, otp);
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent Successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export { userRegister, verification, userLogin, userLogout, forgotPassword };
