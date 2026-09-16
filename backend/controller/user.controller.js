@@ -277,7 +277,7 @@ const forgotPassword = async (req, res) => {
 /* Verify OTP */
 const verifyOTP = async (req, res) => {
   // Get email and OTP
-  const { otp , email } = req.body;
+  const { otp, email } = req.body;
 
   // Validate email and OTP
   if (!email || !otp) {
@@ -338,4 +338,58 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-export { userRegister, verification, userLogin, userLogout, forgotPassword , verifyOTP };
+/* change Password */
+const changePassword = async (req, res) => {
+  // take newPassword and confirmPassword
+  const { email, newPassword, confirmPassword } = req.body;
+
+  //validate the password
+  if (!newPassword || !confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are Required",
+    });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Password do not match",
+    });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // hash the Password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed Successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export {
+  userRegister,
+  verification,
+  userLogin,
+  userLogout,
+  forgotPassword,
+  verifyOTP,
+  changePassword
+};
