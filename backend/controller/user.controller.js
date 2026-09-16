@@ -4,7 +4,6 @@ import jwt, { decode } from "jsonwebtoken";
 import { verifyMail } from "../emailVerify/verifyMail.js";
 import { Session } from "../models/session.model.js";
 import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
-import { use } from "react";
 /* User Register */
 const userRegister = async (req, res) => {
   try {
@@ -278,8 +277,7 @@ const forgotPassword = async (req, res) => {
 /* Verify OTP */
 const verifyOTP = async (req, res) => {
   // Get email and OTP
-  const { otp } = req.body;
-  const { email } = req.params.email;
+  const { otp , email } = req.body;
 
   // Validate email and OTP
   if (!email || !otp) {
