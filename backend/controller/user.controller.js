@@ -7,7 +7,7 @@ import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
 /* User Register */
 const userRegister = async (req, res) => {
   try {
-    // get user from frontend
+    // get user from front
     const { username, email, password } = req.body;
     // validation
     if (!username || !email || !password) {
