@@ -29,7 +29,7 @@ export async function register(req, res) {
   });
 
   // Save the new user to the database
-    await newUser.save();
+  await newUser.save();
 
   // Generate a JWT token
   const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
@@ -37,14 +37,43 @@ export async function register(req, res) {
   });
 
   // Return the token
-  res.status(201).json({ 
+  res.status(201).json({
     message: "User registered successfully",
-    user : {
-        username: newUser.username,
-        email: newUser.email,
+    user: {
+      username: newUser.username,
+      email: newUser.email,
     },
-    token
-   });
+    token,
+  });
+}
 
-   
- }
+// Get user profile
+export async function getMe(req, res) {
+  //get token from header
+  const token = req.headers.authorization.split(" ")[1];
+
+  //check if token is valid
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  //verify token
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+  //get user from database
+  const user = await User.findById(decoded.id).select("-password");
+
+  //check if user exists
+    if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  //return user
+  res.status(200).json({ 
+    message: "User profile fetched successfully",
+    user: {
+      username: user.username,
+      email: user.email,
+    }
+   });
+}
